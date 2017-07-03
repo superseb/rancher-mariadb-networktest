@@ -1,0 +1,23 @@
+version: '2'
+
+services:
+  db:
+    image: mariadb:5.5
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=cattle
+    volumes:
+      - ./cattle.sql:/docker-entrypoint-initdb.d/cattle.sql
+
+  pumba:
+    image: gaiaadm/pumba
+    command: pumba netem --interface eth0 --duration 3m delay --time 3000 ${COMPOSE_PROJECT_NAME}_db_1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - "db"
+
+  rancherserver:
+     image: rancher/server:v1.6.2
+     command: --db-host db --db-port 3306 --db-user cattle --db-pass cattle --db-name cattle
